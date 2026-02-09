@@ -590,24 +590,118 @@
             letter-spacing: 0.5px;
         }
 
-        /* Final Screen */
-        .final-container {
-            text-align: center;
-            padding: 20px;
-            max-width: 600px;
-            position: absolute;
+        /* ============================================
+           POLAROID PHOTO BOOTH STYLES - SCATTERED
+           ============================================ */
+
+        /* Polaroid Container - Full screen background */
+        .polaroid-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 1s ease;
-            z-index: 10;
+            transition: opacity 0.8s ease;
+            z-index: 15;
         }
 
-        .final-container.show {
+        .polaroid-container.show {
             opacity: 1;
             pointer-events: all;
         }
 
-        .final-line {
+        /* Individual Polaroid Photo - scattered effect */
+        .polaroid {
+            background: #fff;
+            padding: 15px 15px 50px 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            border-radius: 4px;
+            position: fixed;
+            opacity: 0;
+            transform-origin: center center;
+        }
+
+        /* Flying in animation */
+        .polaroid.show {
+            opacity: 1;
+            animation: polaroidFlyIn 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes polaroidFlyIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3) rotate(-20deg);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) rotate(var(--rotation, 0deg));
+            }
+        }
+
+        /* Sticking to corner animation */
+        .polaroid.stuck {
+            animation: polaroidStick 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes polaroidStick {
+            0% {
+                transform: scale(1) rotate(var(--rotation, 0deg));
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--stick-x), var(--stick-y)) scale(1) rotate(var(--stuck-rotation, 0deg));
+                opacity: 1;
+            }
+        }
+
+        .polaroid img {
+            width: 300px;
+            height: 300px;
+            object-fit: cover;
+            display: block;
+            border-radius: 2px;
+        }
+
+        .polaroid-caption {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-family: 'Brush Script MT', cursive, 'Segoe UI', sans-serif;
+            font-size: 18px;
+            color: #555;
+            opacity: 0;
+            transition: opacity 0.6s ease 0.5s;
+        }
+
+        .polaroid.show .polaroid-caption {
+            opacity: 1;
+        }
+
+        /* Final Message After All Photos */
+        .final-message-container {
+            text-align: center;
+            padding: 20px;
+            max-width: 600px;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s ease;
+            z-index: 20;
+        }
+
+        .final-message-container.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .final-message {
             font-size: clamp(28px, 6vw, 42px);
             color: #D47B9E;
             margin: 30px 0;
@@ -616,14 +710,21 @@
             letter-spacing: 1.5px;
         }
 
-        .final-line:first-child {
-            font-size: clamp(36px, 7vw, 54px);
-            font-weight: 400;
+        .final-message.show {
+            animation: fadeIn 1.5s ease forwards;
         }
 
-        .final-line:last-child {
-            font-size: clamp(24px, 5vw, 36px);
-            margin-top: 40px;
+        .closing-message {
+            font-size: clamp(20px, 4.5vw, 28px);
+            color: #C75B7A;
+            margin-top: 30px;
+            opacity: 0;
+            font-weight: 300;
+            font-style: italic;
+        }
+
+        .closing-message.show {
+            animation: fadeIn 1.5s ease forwards;
         }
 
         @media (max-width: 480px) {
@@ -643,6 +744,15 @@
 
             .system-box {
                 padding: 40px 30px;
+            }
+
+            .polaroid img {
+                width: 250px;
+                height: 250px;
+            }
+
+            .polaroid {
+                padding: 12px 12px 40px 12px;
             }
         }
     </style>
@@ -748,12 +858,15 @@
         </div>
     </div>
 
-    <!-- Final Screen -->
-    <div class="final-container" id="finalContainer">
-        <div class="final-line">Good.</div>
-        <div class="final-line">I hope this made you a little happy</div>
-        <div class="final-line">Now go and give this developer a little feedback and maybe some kisses too hehe</div>
-        <div class="final-line">Bye :)</div>
+    <!-- Polaroid Photo Booth Container - scattered photos -->
+    <div class="polaroid-container" id="polaroidContainer">
+        <!-- Photos will be dynamically inserted here -->
+    </div>
+
+    <!-- Final Message After Photos -->
+    <div class="final-message-container" id="finalMessageContainer">
+        <div class="final-message">But I need more memories with you.</div>
+        <div class="closing-message">This was just the beginning.</div>
     </div>
 
     <script>
@@ -1038,7 +1151,7 @@
             }
         }
 
-        // NEW: System Processing Sequence
+        // System Processing Sequence
         function showSystemProcessing() {
             const container = document.getElementById('systemContainer');
             const backgroundMusic = document.getElementById('backgroundMusic');
@@ -1111,28 +1224,172 @@
                 warrantyLines.classList.add('show');
             }, timelineStart + 8200);
 
-            // Transition to final screen
+            // Transition to POLAROID PHOTO BOOTH
             setTimeout(() => {
                 container.style.opacity = '0';
                 setTimeout(() => {
                     container.classList.remove('show');
-                    showFinalScreen();
+                    startPolaroidSequence();
                 }, 800);
             }, timelineStart + 10000);
         }
 
-        // Optimized: Faster final screen timing
-        function showFinalScreen() {
-            const container = document.getElementById('finalContainer');
-            const lines = container.querySelectorAll('.final-line');
+        /* ============================================
+           POLAROID PHOTO BOOTH LOGIC - SCATTERED
+           ============================================ */
 
+        const photoData = [
+            {
+                url: 'v1.jpeg',
+                caption: 'It all started here'
+            },
+            {
+                url: 'v2.jpeg',
+                caption: 'Best memory with mid shawarma'
+            },
+            {
+                url: 'v3.jpeg',
+                caption: 'First time in pallikarnai park'
+            },
+            {
+                url: 'v4.jpeg',
+                caption: 'One of my favorite pictures of us'
+            },
+            {
+                url: 'v8.jpeg',
+                caption: 'Our daily little talks and fights'
+            },
+            {
+                url: 'v5.jpeg',
+                caption: 'My first ever flower bouquet from you'
+            },
+            {
+                url: 'v6.jpeg',
+                caption: 'Core memory in the beach'
+            },
+            {
+                url: 'v7.jpeg',
+                caption: 'This has to be the most recent one, right?'
+            }
+        ];
+
+        function startPolaroidSequence() {
+            const container = document.getElementById('polaroidContainer');
             container.classList.add('show');
 
-            lines.forEach((line, index) => {
+            // Calculate scattered positions across the screen
+            const positions = calculateScatteredPositions(photoData.length);
+
+            photoData.forEach((photo, index) => {
                 setTimeout(() => {
-                    line.style.animation = 'fadeIn 1.5s ease forwards';
-                }, index * 1500);
+                    showPolaroid(photo, index, positions[index]);
+                }, index * 2000); // 2 seconds between each photo
             });
+
+            // After all photos, show final message
+            setTimeout(() => {
+                showFinalMessage();
+            }, (photoData.length - 1) * 2000 + 5000);
+        }
+
+        function calculateScatteredPositions(count) {
+            // Create scattered positions across the entire screen
+            const positions = [];
+            const margin = 80; // Distance from edges
+            
+            for (let i = 0; i < count; i++) {
+                positions.push({
+                    x: margin + Math.random() * (window.innerWidth - 2 * margin - 330),
+                    y: margin + Math.random() * (window.innerHeight - 2 * margin - 330),
+                    rotation: -15 + Math.random() * 30
+                });
+            }
+            return positions;
+        }
+
+        function showPolaroid(photoInfo, index, position) {
+            const container = document.getElementById('polaroidContainer');
+            
+            // Create polaroid element
+            const polaroid = document.createElement('div');
+            polaroid.className = 'polaroid';
+            polaroid.id = `polaroid-${index}`;
+            
+            // Set initial position
+            polaroid.style.left = position.x + 'px';
+            polaroid.style.top = position.y + 'px';
+            
+            // Add slight random rotation for character
+            const initialRotation = -5 + Math.random() * 10;
+            polaroid.style.setProperty('--rotation', `${initialRotation}deg`);
+            
+            // Create image
+            const img = document.createElement('img');
+            img.src = photoInfo.url;
+            img.alt = photoInfo.caption;
+            img.onerror = () => console.log('Image failed to load:', photoInfo.url);
+            
+            // Create caption
+            const caption = document.createElement('div');
+            caption.className = 'polaroid-caption';
+            caption.textContent = photoInfo.caption;
+            
+            polaroid.appendChild(img);
+            polaroid.appendChild(caption);
+            container.appendChild(polaroid);
+            
+            // Animate in
+            setTimeout(() => {
+                polaroid.classList.add('show');
+            }, 100);
+            
+            // Stick to memory wall corner after viewing
+            setTimeout(() => {
+                stickPolaroidToCorner(polaroid, index);
+            }, 1200); // 1.2 seconds viewing time before sticking
+        }
+
+        function stickPolaroidToCorner(polaroid, index) {
+            // Calculate stick position in bottom-right corner memory wall area
+            const stickX = -150 + (index % 2) * 120 + Math.random() * 50;
+            const stickY = -150 + Math.floor(index / 2) * 140 + Math.random() * 50;
+            const stuckRotation = -20 + Math.random() * 40;
+            
+            polaroid.style.setProperty('--stick-x', `${stickX}px`);
+            polaroid.style.setProperty('--stick-y', `${stickY}px`);
+            polaroid.style.setProperty('--stuck-rotation', `${stuckRotation}deg`);
+            
+            polaroid.classList.add('stuck');
+        }
+
+        function showFinalMessage() {
+            // Fade out polaroid container
+            const polaroidContainer = document.getElementById('polaroidContainer');
+            polaroidContainer.style.opacity = '0';
+            
+            setTimeout(() => {
+                polaroidContainer.classList.remove('show');
+                
+                // Show final message
+                const messageContainer = document.getElementById('finalMessageContainer');
+                messageContainer.classList.add('show');
+                
+                const message = messageContainer.querySelector('.final-message');
+                const closing = messageContainer.querySelector('.closing-message');
+                
+                setTimeout(() => {
+                    message.classList.add('show');
+                }, 500);
+                
+                setTimeout(() => {
+                    closing.classList.add('show');
+                }, 2500);
+                
+                // Optional: Fade out everything after 6 seconds
+                setTimeout(() => {
+                    messageContainer.style.opacity = '0';
+                }, 8000);
+            }, 800);
         }
 
         function setupUnlock() {
